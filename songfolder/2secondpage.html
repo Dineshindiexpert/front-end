@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>apne song</title>
+  <style>
+    body {
+      background: #121217;
+      color: #eee;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0; padding: 20px;
+      overflow-x: hidden;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      font-weight: 700;
+      color: #ff4081;
+      text-shadow: 0 0 8px #ff4081;
+    }
+    #top50List {
+      display: flex;
+      overflow-x: auto;
+      gap: 12px;
+      padding-bottom: 10px;
+      margin-bottom: 30px;
+    }
+    #top50List::-webkit-scrollbar {
+      height: 8px;
+    }
+    #top50List::-webkit-scrollbar-thumb {
+      background-color: #ff4081aa;
+      border-radius: 5px;
+    }
+    .top50Song {
+      min-width: 140px;
+      background: #1f1f30;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 0 10px #ff4081aa;
+      transition: transform 0.3s ease;
+    }
+    .top50Song:hover {
+      transform: scale(1.1);
+    }
+    .top50Song img {
+      width: 140px;
+      height: 140px;
+      border-radius: 10px 10px 0 0;
+      object-fit: cover;
+      display: block;
+    }
+    .top50Title {
+      font-weight: 600;
+      font-size: 14px;
+      padding: 6px 8px 2px 8px;
+      color: #ff80ab;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .top50Artist {
+      font-size: 12px;
+      padding: 0 8px 8px 8px;
+      color: #bbb;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #searchBar {
+      max-width: 400px;
+      margin: 0 auto 40px;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+    }
+    #searchInput {
+      flex: 1;
+      padding: 10px 14px;
+      font-size: 16px;
+      border-radius: 25px;
+      border: 2px solid #ff4081;
+      outline: none;
+      background: #1f1f30;
+      color: #eee;
+      box-shadow: 0 0 6px #ff4081aa;
+      transition: border-color 0.3s ease;
+    }
+    #searchInput:focus {
+      border-color: #ff80ab;
+      box-shadow: 0 0 10px #ff80ab;
+    }
+    #searchBtn {
+      background: #ff4081;
+      border: none;
+      border-radius: 25px;
+      padding: 10px 20px;
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 0 10px #ff4081;
+      transition: background 0.3s ease;
+    }
+    #searchBtn:hover {
+      background: #ff80ab;
+      box-shadow: 0 0 15px #ff80ab;
+    }
+    #suggestions {
+      max-width: 400px;
+      margin: 10px auto 40px;
+      background: #1f1f30;
+      border-radius: 10px;
+      box-shadow: 0 0 15px #ff4081aa;
+      display: none;
+      overflow: hidden;
+    }
+    #suggestions div {
+      padding: 10px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid #333;
+      color: #eee;
+    }
+    #suggestions div:hover {
+      background: #ff4081aa;
+      color: #121217;
+    }
+    #searchResults {
+      max-width: 900px;
+      margin: 0 auto 100px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 20px;
+    }
+    .resultSong {
+      background: #1f1f30;
+      border-radius: 10px;
+      padding: 8px;
+      cursor: pointer;
+      box-shadow: 0 0 8px #ff4081aa;
+      transition: transform 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .resultSong:hover {
+      transform: scale(1.05);
+    }
+    .resultSong img {
+      width: 140px;
+      height: 140px;
+      border-radius: 10px;
+      object-fit: cover;
+      margin-bottom: 10px;
+    }
+    .resultTitle {
+      font-weight: 600;
+      font-size: 14px;
+      color: #ff80ab;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 100%;
+    }
+    .resultArtist {
+      font-size: 12px;
+      color: #bbb;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 100%;
+    }
+    /* Sticky player bottom */
+    #playerSticky {
+      position: fixed;
+      bottom: 0;
+      left: 0; right: 0;
+      background: #1f1f30;
+      box-shadow: 0 -3px 10px #ff4081aa;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      z-index: 999;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    #currentSongInfo {
+      flex: 1;
+      font-weight: 600;
+      color: #ff80ab;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    button.playerBtn {
+      background: transparent;
+      border: none;
+      color: #ff4081;
+      font-size: 22px;
+      cursor: pointer;
+      transition: color 0.3s ease;
+    }
+    button.playerBtn:hover {
+      color: #ff80ab;
+    }
+    #progressContainer {
+      flex: 2;
+      height: 8px;
+      background: #333;
+      border-radius: 5px;
+      cursor: pointer;
+      position: relative;
+      box-shadow: inset 0 0 5px #ff4081aa;
+    }
+    #progressBar {
+      height: 8px;
+      background: #ff4081;
+      width: 0%;
+      border-radius: 5px;
+      transition: width 0.2s ease;
+    }
+    #timeDisplay {
+      font-size: 12px;
+      color: #bbb;
+      min-width: 70px;
+      text-align: right;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Top 50 Hindi Songs</h1>
+
+  <div id="top50List"></div>
+
+  <div id="searchBar">
+    <input type="text" id="searchInput" placeholder="Search songs or artists..." autocomplete="off" />
+    <button id="searchBtn">Search</button>
+  </div>
+  <div id="suggestions"></div>
+
+  <div id="searchResults"></div>
+
+  <!-- Sticky bottom player -->
+  <div id="playerSticky" style="display:none;">
+    <button id="btnPrev" class="playerBtn" title="Previous">&#9664;&#9664;</button>
+    <button id="btnPlayPause" class="playerBtn" title="Play/Pause">&#9658;</button>
+    <button id="btnNext" class="playerBtn" title="Next">&#9654;&#9654;</button>
+    <div id="progressContainer" title="Seek">
+      <div id="progressBar"></div>
+    </div>
+    <div id="timeDisplay">0:00 / 0:00</div>
+    <div id="currentSongInfo">No song selected</div>
+    <button id="btnDownload" class="playerBtn" title="Download">&#128229;</button>
+    <button id="btnShare" class="playerBtn" title="Share">&#128257;</button>
+  </div>
+
+  <audio id="audioPlayer"></audio>
+
+<script>
+  // Manual song list with mp3 URLs, images, titles, artists
+  // NOTE: Replace mp3Url with your own hosting or public mp3 files you have rights to
+  const songs = [
+    {
+      title: "Tujhe Kitna Chahne Lage",
+      artist: "Arijit Singh",
+      mp3Url: "https://example.com/audio/tujhe_kitna_chahne_lage.mp3",
+      img: "https://img.youtube.com/vi/cBAj7c_4mtw/hqdefault.jpg"
+    },
+    {
+      title: "Shayad",
+      artist: "Arijit Singh",
+      mp3Url: "https://example.com/audio/shayad.mp3",
+      img: "https://img.youtube.com/vi/xuTtHsxxNxA/hqdefault.jpg"
+    },
+    {
+      title: "Bekhayali",
+      artist: "Sachet Tandon",
+      mp3Url: "https://example.com/audio/bekhayali.mp3",
+      img: "https://img.youtube.com/vi/S2nG2UBZq88/hqdefault.jpg"
+    },
+    // Add more songs here
+  ];
+
+  // Globals
+  let currentIndex = -1;
+  let audio = document.getElementById('audioPlayer');
+
+  // DOM Elements
+  const top50List = document.getElementById('top50List');
+  const searchInput = document.getElementById('searchInput');
+  const searchBtn = document.getElementById('searchBtn');
+  const suggestionsEl = document.getElementById('suggestions');
+  const searchResults = document.getElementById('searchResults');
+  const playerSticky = document.getElementById('playerSticky');
+  const currentSongInfo = document.getElementById('currentSongInfo');
+  const btnPlayPause = document.getElementById('btnPlayPause');
+  const btnPrev = document.getElementById('btnPrev');
+  const btnNext = document.getElementById('btnNext');
+  const progressContainer = document.getElementById('progressContainer');
+  const progressBar = document.getElementById('progressBar');
+  const timeDisplay = document.getElementById('timeDisplay');
+  const btnDownload = document.getElementById('btnDownload');
+  const btnShare = document.getElementById('btnShare');
+
+  // Initialize
+  function init() {
+    renderTop50();
+    renderSearchResults(songs);
+  }
+
+  // Render horizontal Top 50 songs
+  function renderTop50() {
+    top50List.innerHTML = "";
+    songs.forEach((song, i) => {
+      const div = document.createElement('div');
+      div.className = "top50Song";
+      div.innerHTML = `
+        <img src="${song.img}" alt="${song.title}" />
+        <div class="top50Title">${song.title}</div>
+        <div class="top50Artist">${song.artist}</div>
+      `;
+      div.onclick = () => playSong(i);
+      top50List.appendChild(div);
+    });
+  }
+
+  // Render search results grid
+  function renderSearchResults(list) {
+    searchResults.innerHTML = "";
+    if(list.length === 0) {
+      searchResults.innerHTML = "<p style='color:#ff4081;text-align:center;'>No songs found</p>";
+      return;
+    }
+    list.forEach((song, i) => {
+      const div = document.createElement('div');
+      div.className = "resultSong";
+      div.innerHTML = `
+        <img src="${song.img}" alt="${song.title}" />
+        <div class="resultTitle">${song.title}</div>
+        <div class="resultArtist">${song.artist}</div>
+      `;
+      div.onclick = () => playSong(songs.indexOf(song));
+      searchResults.appendChild(div);
+    });
+  }
+
+  // Play song by index
+  function playSong(i) {
+    if(i < 0 || i >= songs.length) return;
+    currentIndex = i;
+    audio.src = songs[i].mp3Url;
+    audio.play();
+    playerSticky.style.display = "flex";
+    btnPlayPause.innerHTML = "&#10073;&#10073;"; // pause icon
+    updatePlayerInfo();
+  }
+
+  // Update player info & controls
+  function updatePlayerInfo() {
+    const song = songs[currentIndex];
+    currentSongInfo.textContent = `${song.title} — ${song.artist}`;
+  }
+
+  // Play/Pause toggle
+  btnPlayPause.onclick = () => {
+    if(audio.paused) {
+      audio.play();
+      btnPlayPause.innerHTML = "&#10073;&#10073;"; // pause icon
+    } else {
+      audio.pause();
+      btnPlayPause.innerHTML = "&#9658;"; // play icon
+    }
+  };
+
+  // Previous song
+  btnPrev.onclick = () => {
+    if(currentIndex <= 0) playSong(songs.length - 1);
+    else playSong(currentIndex - 1);
+  };
+
+  // Next song
+  btnNext.onclick = () => {
+    if(currentIndex >= songs.length - 1) playSong(0);
+    else playSong(currentIndex + 1);
+  };
+
+  // Update progress bar and time
+  audio.ontimeupdate = () => {
+    if(audio.duration) {
+      let percent = (audio.currentTime / audio.duration) * 100;
+      progressBar.style.width = percent + "%";
+      timeDisplay.textContent = formatTime(audio.currentTime) + " / " + formatTime(audio.duration);
+    }
+  };
+
+  // Seek on progress bar click
+  progressContainer.onclick = (e) => {
+    const rect = progressContainer.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const seekPercent = clickX / rect.width;
+    if(audio.duration) {
+      audio.currentTime = audio.duration * seekPercent;
+    }
+  };
+
+  // Format seconds to mm:ss
+  function formatTime(sec) {
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return m + ":" + (s < 10 ? "0" + s : s);
+  }
+
+  // Download current song (simple link download)
+  btnDownload.onclick = () => {
+    if(currentIndex === -1) {
+      alert("No song playing to download");
+      return;
+    }
+    const a = document.createElement('a');
+    a.href = songs[currentIndex].mp3Url;
+    a.download = songs[currentIndex].title + ".mp3";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  // Share current song URL
+  btnShare.onclick = () => {
+    if(currentIndex === -1) {
+      alert("No song playing to share");
+      return;
+    }
+    const song = songs[currentIndex];
+    const shareText = `Listen to ${song.title} by ${song.artist}`;
+    const shareUrl = song.mp3Url;
+
+    if(navigator.share) {
+      navigator.share({
+        title: song.title,
+        text: shareText,
+        url: shareUrl,
+      }).catch(() => alert("Share cancelled or failed."));
+    } else {
+      prompt("Copy this link to share:", shareUrl);
+    }
+  };
+
+  // Search with suggestions and results
+  function searchSongs(query) {
+    query = query.trim().toLowerCase();
+    if(!query) {
+      suggestionsEl.style.display = "none";
+      renderSearchResults(songs);
+      return;
+    }
+    // Suggestions
+    let sug = songs.filter(s => s.title.toLowerCase().startsWith(query) || s.artist.toLowerCase().startsWith(query));
+    if(sug.length > 0) {
+      suggestionsEl.innerHTML = "";
+      sug.slice(0,5).forEach(s => {
+        const div = document.createElement("div");
+        div.textContent = `${s.title} — ${s.artist}`;
+        div.onclick = () => {
+          searchInput.value = s.title;
+          suggestionsEl.style.display = "none";
+          renderSearchResults([s]);
+        };
+        suggestionsEl.appendChild(div);
+      });
+      suggestionsEl.style.display = "block";
+    } else {
+      suggestionsEl.style.display = "none";
+    }
+    // Results
+    let results = songs.filter(s => s.title.toLowerCase().includes(query) || s.artist.toLowerCase().includes(query));
+    renderSearchResults(results);
+  }
+
+  searchBtn.onclick = () => {
+    searchSongs(searchInput.value);
+    suggestionsEl.style.display = "none";
+  };
+
+  searchInput.addEventListener("input", () => {
+    searchSongs(searchInput.value);
+  });
+
+  document.body.addEventListener("click", e => {
+    if(!suggestionsEl.contains(e.target) && e.target !== searchInput) {
+      suggestionsEl.style.display = "none";
+    }
+  });
+
+  // Initialize on load
+  init();
+</script>
+</body>
+</html>
