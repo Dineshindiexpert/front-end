@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Advanced Music Player</title>
+<style>
+  :root {
+    --color-primary-start: #ff4081;
+    --color-primary-end: #ff80ab;
+    --color-primary-hover-start: #ff80ab;
+    --color-primary-hover-end: #ff4081;
+    --color-text-dark: #121217;
+    --color-text-light: #eee;
+    --bg-dark: #121217;
+    --bg-light: #fafafa;
+    --shadow-primary: 0 0 10px #ff4081aa;
+    --shadow-primary-hover: 0 0 18px #ff80ab;
+  }
+  html, body {
+    margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--bg-light);
+    color: var(--color-text-dark);
+    min-height: 100vh;
+  }
+  body.dark {
+    background: var(--bg-dark);
+    color: var(--color-text-light);
+  }
+  button, input[type=range] {
+    font: inherit;
+  }
+  /* Dark/Light toggle */
+  #themeToggle {
+    position: fixed;
+    top: 10px; right: 10px;
+    background: linear-gradient(90deg, var(--color-primary-start), var(--color-primary-end));
+    border: none;
+    border-radius: 20px;
+    color: white;
+    padding: 8px 15px;
+    cursor: pointer;
+    user-select: none;
+    box-shadow: var(--shadow-primary);
+    transition: background 0.3s ease;
+    z-index: 1000;
+  }
+  #themeToggle:hover, #themeToggle:focus-visible {
+    background: linear-gradient(90deg, var(--color-primary-hover-start), var(--color-primary-hover-end));
+    box-shadow: var(--shadow-primary-hover);
+  }
+
+  /* Layout containers */
+  main {
+    padding: 60px 15px 120px; /* space for sticky player + theme toggle */
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  h1 {
+    text-align: center;
+    margin-bottom: 0.3em;
+  }
+  #searchInput {
+    display: block;
+    margin: 10px auto 30px;
+    padding: 10px 15px;
+    width: 90%;
+    max-width: 400px;
+    font-size: 1rem;
+    border-radius: 25px;
+    border: 1px solid #ccc;
+    transition: border-color 0.3s;
+  }
+  #searchInput:focus {
+    border-color: var(--color-primary-start);
+    outline: none;
+  }
+  body.dark #searchInput {
+    background: #222;
+    border-color: #555;
+    color: var(--color-text-light);
+  }
+  body.dark #searchInput:focus {
+    border-color: var(--color-primary-end);
+  }
+
+  /* Top 50 list & search results grid */
+  #top50List, #searchResults {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fill,minmax(160px,1fr));
+  }
+
+  /* Song card base */
+  .songCard {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 0 8px #aaa3;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    user-select: none;
+    transition: box-shadow 0.3s, transform 0.2s;
+  }
+  .songCard:hover, .songCard:focus-within {
+    box-shadow: 0 0 15px var(--color-primary-end);
+    transform: translateY(-4px);
+  }
+  body.dark .songCard {
+    background: #222;
+    box-shadow: 0 0 8px #000a;
+  }
+  body.dark .songCard:hover, body.dark .songCard:focus-within {
+    box-shadow: 0 0 15px var(--color-primary-end);
+  }
+  .songCard img {
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    background: #eee;
+  }
+  body.dark .songCard img {
+    background: #444;
+  }
+  .songInfo {
+    padding: 10px 12px 8px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .songTitle {
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 4px;
+    line-height: 1.2;
+  }
+  .songArtist {
+    font-size: 0.85rem;
+    color: #666;
+  }
+  body.dark .songArtist {
+    color: #aaa;
+  }
+
+  /* Controls container inside each card */
+  .songControls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+  }
+
+  /* Favorite button */
+  .favBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 20px;
+    color: #ccc;
+    transition: color 0.3s;
+    user-select: none;
+  }
+  .favBtn.active {
+    color: #ff4081;
+    text-shadow: 0 0 5px #ff4081aa;
+  }
+  .favBtn:focus-visible {
+    outline: 2px solid var(--color-primary-start);
+    outline-offset: 2px;
+  }
+
+  /* Download button in cards */
+  .downloadBtn {
+    background: linear-gradient(90deg, var(--color-primary-start) 0%, var(--color-primary-end) 100%);
+    border: none;
+    border-radius: 25px;
+    color: #fff;
+    font-weight: 700;
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    box-shadow: var(--shadow-primary);
+    font-size: 13px;
+    transition: background 0.3s, box-shadow 0.3s, transform 0.2s;
+    user-select: none;
+  }
+  .downloadBtn:hover, .downloadBtn:focus-visible {
+    background: linear-gradient(90deg, var(--color-primary-hover-start) 0%, var(--color-primary-hover-end) 100%);
+    box-shadow: var(--shadow-primary-hover);
+    transform: scale(1.07);
+    color: var(--color-text-dark);
+  }
+  body.dark .downloadBtn:hover, body.dark .downloadBtn:focus-visible {
+    color: var(--color-text-light);
+  }
+  .downloadBtn svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+    vertical-align: middle;
+  }
+
+  /* Sticky player */
+  #playerSticky {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(90deg, var(--color-primary-start), var(--color-primary-end));
+    color: white;
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    box-shadow: 0 -2px 10px #ff4081aa;
+    z-index: 999;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  body.dark #playerSticky {
+    box-shadow: 0 -2px 12px #ff80abcc;
+  }
+
+  /* Sticky player buttons */
+  .playerBtn {
+    background: none;
+    border: none;
+    color: inherit;
+    font-size: 20px;
+    cursor: pointer;
+    user-select: none;
+    padding: 8px 12px;
+    border-radius: 50%;
+    transition: background 0.2s ease, transform 0.15s ease;
+  }
+  .playerBtn:hover, .playerBtn:focus-visible {
+    background: rgba(255 255 255 / 0.25);
+    transform: scale(1.2);
+    outline: none;
+  }
+  /* Repeat button active style */
+  #btnRepeat.active {
+    box-shadow: 0 0 10px #ff4081ee;
+    background: rgba(255 255 255 / 0.35);
+  }
+
+  /* Progress container */
+  #progressContainer {
+    flex-grow: 1;
+    height: 8px;
+    background: rgba(255 255 255 / 0.3);
+    border-radius: 5px;
+    cursor: pointer;
+    position: relative;
+    user-select: none;
+  }
+  #progressBar {
+    height: 100%;
+    width: 0%;
+    background: #fff;
+    border-radius: 5px;
+  }
+
+  /* Time display */
+  #timeDisplay {
+    font-size: 14px;
+    min-width: 85px;
+    text-align: center;
+  }
+
+  /* Current song info */
+  #currentSongInfo {
+    flex-shrink: 0;
+    font-weight: 700;
+    font-size: 14px;
+    max-width: 200px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  /* Volume control */
+  #volumeControl {
+    width: 100px;
+    cursor: pointer;
+  }
+  #volumeControl::-webkit-slider-thumb {
+    cursor: pointer;
+  }
+
+  /* Lyrics modal */
+  #lyricsModal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--bg-light);
+    max-width: 90vw;
+    max-height: 80vh;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 0 30px #ff4081bb;
+    overflow-y: auto;
+    z-index: 1500;
+  }
+  body.dark #lyricsModal {
+    background: var(--bg-dark);
+    box-shadow: 0 0 30px #ff80abb8;
+    color: var(--color-text-light);
+  }
+  #lyricsModal h2 {
+    margin-top: 0;
+    font-weight: 700;
+  }
+  #lyricsContent {
+    white-space: pre-wrap;
+    margin-top: 12px;
+  }
+  #closeLyrics {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    font-size: 18px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: var(--color-primary-end);
+    font-weight: 700;
+  }
+  #closeLyrics:hover, #closeLyrics:focus-visible {
+    color: var(--color-primary-start);
+    outline: none;
+  }
+
+  /* Responsive tweaks */
+  @media (max-width: 500px) {
+    #playerSticky {
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+    }
+    #currentSongInfo {
+      max-width: 100%;
+      text-align: center;
+      order: 5;
+      width: 100%;
+    }
+    #volumeControl {
+      width: 80px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<button id="themeToggle" aria-label="Toggle dark or light theme" title="Toggle dark/light theme">🌙</button>
+
+<main>
+  <h1>🎵 Top 50 Songs</h1>
+  <input type="search" id="searchInput" placeholder="Search songs or artists..." aria-label="Search songs or artists" />
+
+  <section id="top50List" aria-label="Top 50 Songs List"></section>
+  <section id="searchResults" aria-label="Search Results"></section>
+</main>
+
+<!-- Sticky audio player -->
+<div id="playerSticky" style="display:none;" role="region" aria-label="Audio player controls">
+  <button id="btnPrev" class="playerBtn" title="Previous" aria-label="Previous song">&#9664;&#9664;</button>
+  <button id="btnPlayPause" class="playerBtn" title="Play or Pause" aria-label="Play or Pause">&#9658;</button>
+  <button id="btnNext" class="playerBtn" title="Next" aria-label="Next song">&#9654;&#9654;</button>
+  <button id="btnRepeat" class="playerBtn" title="Repeat toggle" aria-pressed="false" aria-label="Toggle repeat">&#128257;</button>
+  <div id="progressContainer" title="Seek in song" role="slider" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
+    <div id="progressBar"></div>
+  </div>
+  <div id="timeDisplay" aria-live="polite" aria-atomic="true">0:00 / 0:00</div>
+  <div id="currentSongInfo" aria-live="polite" aria-atomic="true">No song selected</div>
+  <button id="btnDownload" class="playerBtn" title="Download" aria-label="Download current song">
+    <svg viewbox="0 0 20 20" aria-hidden="true"><path d="M10 2a1 1 0 0 1 1 1v8.586l2.293-2.293a1 1 0 1 1 1.414 1.414l-4 4a1 1 0 0 1-1.414 0l-4-4A1 1 0 1 1 6.293 9.293L8.5 11.586V3a1 1 0 0 1 1-1zm-7 13a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1z"/></svg>
+  </button>
+  <button id="btnLyrics" class="playerBtn" title="Show lyrics" aria-label="Show lyrics">📝</button>
+  <input type="range" id="volumeControl" min="0" max="1" step="0.01" aria-label="Volume control" value="0.8" />
+</div>
+
+<!-- Lyrics modal -->
+<div id="lyricsModal" role="dialog" aria-modal="true" aria-labelledby="lyricsTitle" tabindex="-1">
+  <button id="closeLyrics" aria-label="Close lyrics modal">&times;</button>
+  <h2 id="lyricsTitle">Lyrics</h2>
+  <pre id="lyricsContent">Loading lyrics...</pre>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  // Sample song data array (id, title, artist, mp3 URL, cover image, lyrics, downloadAllowed)
+  // NOTE: Replace mp3 URLs with real sources or your own.
+   
+    const songs = [
+    {
+        title: "Tujhe Kitna Chahne Lage",
+        artist: "Arijit Singh",
+        mp3Url: "https://pagalfree.com/musics/128-Tujhe%20Kitna%20Chahne%20Lage%20-%20Kabir%20Singh%20128%20Kbps.mp3",
+        img: "https://i.imgur.com/1bX5QH6.jpg"    
+    },
+    {
+        title: "Chaleya",
+        artist: "Arijit Singh, Shilpa Rao",
+        mp3Url: "https://pagalfree.com/musics/128-Chaleya%20-%20Jawan%20128%20Kbps.mp3",
+        img: "https://i.imgur.com/8RKXAIV.jpg"   
+    },
+    {
+        title: "Kesariya",
+        artist: "Arijit Singh",
+        mp3Url: "https://pagalfree.com/musics/128-Kesariya%20-%20Brahmastra%20128%20Kbps.mp3",
+        img: "https://i.imgur.com/En9z6vN.jpg"   // ✅ Working image link
+    },
+    
+
+    {
+      title: "Shayad",
+      artist: "Arijit Singh",
+      mp3Url: "https://example.com/audio/shayad.mp3",
+      img: "https://is3-ssl.mzstatic.com/image/thumb/Music114/v4/27/3e/14/273e1405-41f2-8290-679e-10c75f2ff4ec/886449193172.jpg/1200x1200bf-60.jpg"
+    },
+    {
+      title: "Bekhayali",
+      artist: "Sachet Tandon",
+      mp3Url: "https://example.com/audio/bekhayali.mp3",
+      img: "https://th.bing.com/th/id/OIP.csCb-Fm7clRloJs3LrsHNQHaFj?w=228&h=180&c=7&r=0&o=7&pid=1.7&rm=3"
+    },
+    {
+        title:"Banzara",
+        artist:"ft sidharth",
+        mp3Url:"https://example.com/audio/banzara.p3",
+        img:"https://th.bing.com/th/id/OIP.VIyWe3nt-GCRlhfg7SId3gHaEK?w=329&h=185&c=7&r=0&o=7&pid=1.7&rm=3"
+    },
+     
+   
+    {
+        "title": "Tujhe Kitna Chahne Lage",
+        "artist": "Arijit Singh",
+        "mp3Url": "https://example.com/audio/tujhe_kitna_chahne_lage.mp3",
+        "img": "https://th.bing.com/th/id/OIP.QGOK2bd6M6CCyeGQuNP3iAHaEK?w=301&h=180&c=7&r=0&o=7&pid=1.7&rm=3"
+    },
+    {
+        "title": "Shayad",
+        "artist": "Arijit Singh",
+        "mp3Url": "https://example.com/audio/shayad.mp3",
+        "img": "https://is3-ssl.mzstatic.com/image/thumb/Music114/v4/27/3e/14/273e1405-41f2-8290-679e-10c75f2ff4ec/886449193172.jpg/1200x1200bf-60.jpg"
+    },
+    {
+        "title": "Bekhayali",
+        "artist": "Sachet Tandon",
+        "mp3Url": "https://example.com/audio/bekhayali.mp3",
+        "img": "https://th.bing.com/th/id/OIP.csCb-Fm7clRloJs3LrsHNQHaFj?w=228&h=180&c=7&r=0&o=7&pid=1.7&rm=3"
+    },
+    {
+        "title": "Banzara",
+        "artist": "ft Sidharth",
+        "mp3Url": "https://example.com/audio/banzara.mp3",
+        "img": "https://th.bing.com/th/id/OIP.VIyWe3nt-GCRlhfg7SId3gHaEK?w=329&h=185&c=7&r=0&o=7&pid=1.7&rm=3"
+    },
+    {
+        "title": "Jannatein Kahan",
+        "artist": "KK",
+        "mp3Url": "https://example.com/audio/jannatein_kahan.mp3",
+        "img": "https://th.bing.com/th/id/OIP.gpn0KF-eKZJ_HxuQjA-ucwHaEK?w=301&h=180&c=7&r=0&o=7&pid=1.7&rm=3"
+    },
+    {
+        "title": "Tum Mile",
+        "artist": "Neeraj Shridhar",
+        "mp3Url": "https://example.com/audio/tum_mile.mp3",
+        "img": "https://th.bing.com/th/id/OIP.pibc2qXdauJGbxpA1AOCZwHaEK?w=324&h=182&c=7&r=0&o=7&pid=1.7&rm=3"
+    },
+    {
+        "title": "Phir Kabhi",
+        "artist": "Arijit Singh",
+        "mp3Url": "https://example.com/audio/phir_kabhi.mp3",
+        "img": "https://i.ytimg.com/vi/i9kJV6oOn7A/maxresdefault.jpg"
+    },
+    {
+        "title": "Raataan Lambiyan",
+        "artist": "Jubin Nautiyal",
+        "mp3Url": "https://example.com/audio/raataan_lambiyan.mp3",
+        "img": "https://th.bing.com/th/id/OIP.wGqm8lMz6oe6c-7j8XqFLQHaEK?w=298&h=180&c=7&r=0&o=7&pid=1.7&rm=3"
+    },
+    {
+        "title": "Galliyan",
+        "artist": "Ankit Tiwari",
+        "mp3Url": "https://example.com/audio/galliyan.mp3",
+        "img": "https://th.bing.com/th/id/OIP.VjRShbI29oJFpB-APtFU2wHaEK?w=316&h=180&c=7&r=0&o=7&pid=1.7&rm=3"
+    },
+    {
+        "title": "Hasi",
+        "artist": "Ami Mishra",
+        "mp3Url": "https://example.com/audio/hasi.mp3",
+        "img": "https://th.bing.com/th/id/OIP.mUkCLPdesyhyMScnPRc_0wHaEK?w=324&h=182&c=7&r=0&o=7&pid=1.7&rm=3"
+    },
+    {
+        "title": "Agar Tum Saath Ho",
+        "artist": "Alka Yagnik & Arijit Singh",
+        "mp3Url": "https://example.com/audio/agar_tum_saath_ho.mp3",
+        "img": "https://th.bing.com/th/id/OIP.eh7eqY3rtPRd_xhpiRHF2QHaEK?w=295&h=180&c=7&r=0&o=7&pid=1.7&rm=3"
+    },
+    {
+        "title": "Tera Ban Jaunga",
+        "artist": "Akhil Sachdeva",
+        "mp3Url": "https://example.com/audio/tera_ban_jaunga.mp3",
+        "img": "https://i.ytimg.com/vi/Ffpe1tqWx0Y/maxresdefault.jpg"
+    },
+    {
+        "title": "Ranjha",
+        "artist": "B Praak",
+        "mp3Url": "https://example.com/audio/ranjha.mp3",
+        "img": "https://th.bing.com/th/id/OIP.8slQGleTwApzL3KXvxI_4QHaEK?w=298&h=180&c=7&r=0&o=7&pid=1.7&rm=3"
+    },
+    {
+        "title": "Mann Bharryaa",
+        "artist": "B Praak",
+        "mp3Url": "https://example.com/audio/mann_bharryaa.mp3",
+        "img": "https://th.bing.com/th/id/OIP.fzRuRYN94b4M1jujZC37ogHaEK?w=298&h=180&c=7&r=0&o=7&pid=1.7&rm=3"
+    },
+    {
+        "title": "Kaise Hua",
+        "artist": "Vishal Mishra",
+        "mp3Url": "https://example.com/audio/kaise_hua.mp3",
+        "img": "https://th.bing.com/th/id/OIP.BXtNrI-vrLuVd_UjN84mnQHaEP?w=293&h=180&c=7&r=0&o=7&pid=1.7&rm=3"
+    },
+    {
+        "title": "Kesariya",
+        "artist": "Arijit Singh",
+        "mp3Url": "https://example.com/audio/kesariya.mp3",
+        "img": "https://th.bing.com/th/id/OIP.aT2cj1X9rEE0g2fc2DUfoAHaEK?w=297&h=180&c=7&r=0&o=7&pid=1.7&rm=3"
+    },
+    {
+        "title": "Apna Bana Le",
+        "artist": "Arijit Singh",
+        "mp3Url": "https://example.com/audio/apna_bana_le.mp3",
+        "img": "https://th.bing.com/th/id/OIP.xVw3buFlPXusaXT4QmF0FwHaHa?w=177&h=180&c=7&r=0&o=7&pid=1.7&rm=3"
+    },
+    {
+        "title": "Shiddat",
+        "artist": "Manan Bhardwaj",
+        "mp3Url": "https://example.com/audio/shiddat.mp3",
+        "img": "https://th.bing.com/th/id/OIP.eNdKnhqXjurUsCNGWfvXzwHaLH?w=115&h=180&c=7&r=0&o=7&pid=1.7&rm=3"
+    },
+    {
+        "title": "Dil Diyan Gallan",
+        "artist": "Atif Aslam",
+        "mp3Url": "https://example.com/audio/dil_diyan_gallan.mp3",
+        "img": "https://th.bing.com/th/id/OIP.xN3_hQOLlwt_709obR9rwQHaEK?w=296&h=180&c=7&r=0&o=7&pid=1.7&rm=3"
+    },
+    {
+        "title": "Humnava Mere",
+        "artist": "Jubin Nautiyal",
+        "mp3Url": "https://example.com/audio/humnava_mere.mp3",
+        "img": "https://th.bing.com/th/id/OIP.00j47Izp2bg2BK3thJ9IOQHaEK?w=311&h=180&c=7&r=0&o=7&pid=1.7&rm=3"
+    },
+    {
+        "title": "Pachtaoge",
+        "artist": "Arijit Singh",
+        "mp3Url": "https://example.com/audio/pachtaoge.mp3",
+        "img": "https://th.bing.com/th/id/OIP.060Axg9DPxeYH0RPUUex7AHaEl?w=262&h=180&c=7&r=0&o=7&pid=1.7&rm=3"
+    },
+    {
+        "title": "Tujh Mein Rab Dikhta Hai",
+        "artist": "Roop Kumar Rathod",
+        "mp3Url": "https://example.com/audio/tujh_mein_rab_dikhta_hai.mp3",
+        "img": "https://th.bing.com/th/id/OIP.oaevAG6uTcknL-9CQblHwgHaEK?w=321&h=181&c=7&r=0&o=7&pid=1.7&rm=3"
+    },
+    {
+        "title": "Khairiyat",
+        "artist": "Arijit Singh",
+        "mp3Url": "https://example.com/audio/khairiyat.mp3",
+        "img": "https://th.bing.com/th/id/OIP.hjRCoWZFWiKfodpVs_J2RwHaEK?w=310&h=180&c=7&r=0&o=7&pid=1.7&rm=3"
+    },
+    {
+        "title": "Sun Saathiya",
+        "artist": "Priya Saraiya & Divya Kumar",
+        "mp3Url": "https://example.com/audio/sun_saathiya.mp3",
+        "img": "https://th.bing.com/th/id/OIP.j_VXBaYRQFQKFeXntSUmDgHaEK?w=322&h=181&c=7&r=0&o=7&pid=1.7&rm=3"
+    },
+    {
+        "title": "Jeene Laga Hoon",
+        "artist": "Atif Aslam",
+        "mp3Url": "https://example.com/audio/jeene_laga_hoon.mp3",
+        "img": "https://th.bing.com/th/id/OIP.UvpVB_RdrNrgp1GOilVGAgHaEK?w=321&h=181&c=7&r=0&o=7&pid=1.7&rm=3"
+    },
+    {
+        "title": "Tum Hi Ho",
+        "artist": "Arijit Singh",
+        "mp3Url": "https://example.com/audio/tum_hi_ho.mp3",
+        "img": "https://th.bing.com/th/id/OIP.5O77DBX9WEnG2yPZWpTXrAHaEK?w=333&h=187&c=7&r=0&o=7&pid=1.7&rm=3"
+    },
+     
+     
+    {
+        "title": "Tera Yaar Hoon Main",
+        "artist": "Arijit Singh",
+        "mp3Url": "https://example.com/audio/tera_yaar_hoon_main.mp3",
+        "img": "https://th.bing.com/th/id/OIP.z12-uPjetfl2ipgcDXle1gAAAA?w=298&h=180&c=7&r=0&o=7&pid=1.7&rm=3"
+    },
+    {
+        "title": "Channa Mereya",
+        "artist": "Arijit Singh",
+        "mp3Url": "https://example.com/audio/channa_mereya.mp3",
+        "img": "https://th.bing.com/th/id/OIP.myn6QRZVfv9JEkq7uNrV3wHaEK?w=299&h=180&c=7&r=0&o=7&pid=1.7&rm=3"
+    },
+    {
+        "title": "Mast Magan",
+        "artist": "Arijit Singh",
+        "mp3Url": "https://example.com/audio/mast_magan.mp3",
+        "img": "https://th.bing.com/th/id/OIP.8ogd5RTS70at9UcWn3QWqwHaEK?w=308&h=180&c=7&r=0&o=7&pid=1.7&rm=3"
+    },
+    {
+        "title": "Pee Loon",
+        "artist": "Mohit Chauhan",
+        "mp3Url": "https://example.com/audio/pee_loon.mp3",
+        "img": "https://th.bing.com/th/id/OIP.cdY3VRfp9XRVRVxWBd63aAHaEK?w=306&h=180&c=7&r=0&o=7&pid=1.7&rm=3"
+    },
+    {
+        "title": "Raabta",
+        "artist": "Arijit Singh",
+        "mp3Url": "https://example.com/audio/raabta.mp3",
+        "img": "https://th.bing.com/th/id/OIP.DtNUg7aU9ghyuOthwg0vFwHaEn?w=261&h=180&c=7&r=0&o=7&pid=1.7&rm=3"
+    },
+    // Add more songs here up to 50 for full demo
+  ];
+
+  // State vars
+  let currentIndex = -1;
+  let isPlaying = false;
+  let repeat = false;
+  let favorites = new Set();
+  let filteredSongs = [];
+
+  // DOM refs
+  const themeToggleBtn = document.getElementById('themeToggle');
+  const top50List = document.getElementById('top50List');
+  const searchInput = document.getElementById('searchInput');
+  const searchResults = document.getElementById('searchResults');
+  const playerSticky = document.getElementById('playerSticky');
+  const btnPlayPause = document.getElementById('btnPlayPause');
+  const btnPrev = document.getElementById('btnPrev');
+  const btnNext = document.getElementById('btnNext');
+  const btnRepeat = document.getElementById('btnRepeat');
+  const progressContainer = document.getElementById('progressContainer');
+  const progressBar = document.getElementById('progressBar');
+  const timeDisplay = document.getElementById('timeDisplay');
+  const currentSongInfo = document.getElementById('currentSongInfo');
+  const volumeControl = document.getElementById('volumeControl');
+  const btnDownload = document.getElementById('btnDownload');
+  const btnLyrics = document.getElementById('btnLyrics');
+  const lyricsModal = document.getElementById('lyricsModal');
+  const lyricsContent = document.getElementById('lyricsContent');
+  const closeLyricsBtn = document.getElementById('closeLyrics');
+
+  // Audio element
+  const audio = new Audio();
+  audio.preload = 'metadata';
+
+  // Initialize favorites from localStorage
+  function loadFavorites() {
+    try {
+      const favs = JSON.parse(localStorage.getItem('favorites')) || [];
+      favorites = new Set(favs);
+    } catch {
+      favorites = new Set();
+    }
+  }
+  function saveFavorites() {
+    localStorage.setItem('favorites', JSON.stringify([...favorites]));
+  }
+
+  // Render songs (top 50 or search)
+  function renderSongs(list, container) {
+    container.innerHTML = '';
+    if (!list.length) {
+      container.innerHTML = '<p>No songs found.</p>';
+      return;
+    }
+    for (const song of list) {
+      const card = document.createElement('article');
+      card.className = 'songCard';
+      card.tabIndex = 0;
+      card.setAttribute('role', 'button');
+      card.setAttribute('aria-pressed', 'false');
+      card.setAttribute('aria-label', `Play ${song.title} by ${song.artist}`);
+
+      // Fallback for images on error
+      const img = document.createElement('img');
+      img.src = song.cover;
+      img.alt = `${song.title} cover art`;
+      img.onerror = () => {
+        img.src = 'https://via.placeholder.com/300?text=No+Image';
+      };
+
+      const infoDiv = document.createElement('div');
+      infoDiv.className = 'songInfo';
+
+      const titleEl = document.createElement('h3');
+      titleEl.className = 'songTitle';
+      titleEl.textContent = song.title;
+
+      const artistEl = document.createElement('p');
+      artistEl.className = 'songArtist';
+      artistEl.textContent = song.artist;
+
+      const controlsDiv = document.createElement('div');
+      controlsDiv.className = 'songControls';
+
+      // Favorite button
+      const favBtn = document.createElement('button');
+      favBtn.className = 'favBtn';
+      favBtn.innerHTML = '❤️';
+      favBtn.title = favorites.has(song.id) ? 'Remove from favorites' : 'Add to favorites';
+      favBtn.setAttribute('aria-pressed', favorites.has(song.id));
+      if (favorites.has(song.id)) favBtn.classList.add('active');
+      favBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        toggleFavorite(song.id, favBtn);
+      });
+
+      // Download button (if allowed)
+      const downloadBtn = document.createElement('button');
+      downloadBtn.className = 'downloadBtn';
+      downloadBtn.title = song.downloadAllowed ? 'Download song' : 'Download not allowed';
+      downloadBtn.disabled = !song.downloadAllowed;
+      downloadBtn.setAttribute('aria-disabled', !song.downloadAllowed);
+      downloadBtn.innerHTML = `<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2a1 1 0 0 1 1 1v8.586l2.293-2.293a1 1 0 1 1 1.414 1.414l-4 4a1 1 0 0 1-1.414 0l-4-4A1 1 0 1 1 6.293 9.293L8.5 11.586V3a1 1 0 0 1 1-1zm-7 13a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1z"/></svg> Download`;
+      downloadBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        if (song.downloadAllowed) {
+          const a = document.createElement('a');
+          a.href = song.mp3;
+          a.download = `${song.title} - ${song.artist}.mp3`;
+          a.click();
+        } else {
+          alert('Sorry, download is not allowed for this song.');
+        }
+      });
+
+      controlsDiv.appendChild(favBtn);
+      controlsDiv.appendChild(downloadBtn);
+
+      infoDiv.appendChild(titleEl);
+      infoDiv.appendChild(artistEl);
+      infoDiv.appendChild(controlsDiv);
+
+      card.appendChild(img);
+      card.appendChild(infoDiv);
+
+      // Click to play
+      card.addEventListener('click', () => {
+        playSongById(song.id);
+      });
+
+      // Keyboard accessibility
+      card.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          playSongById(song.id);
+        }
+      });
+
+      container.appendChild(card);
+    }
+  }
+
+  // Toggle favorite
+  function toggleFavorite(id, btn) {
+    if (favorites.has(id)) {
+      favorites.delete(id);
+      btn.classList.remove('active');
+      btn.title = 'Add to favorites';
+      btn.setAttribute('aria-pressed', 'false');
+    } else {
+      favorites.add(id);
+      btn.classList.add('active');
+      btn.title = 'Remove from favorites';
+      btn.setAttribute('aria-pressed', 'true');
+    }
+    saveFavorites();
+  }
+
+  // Find song index by ID
+  function getIndexById(id) {
+    return songs.findIndex(s => s.id === id);
+  }
+
+  // Play song by ID
+  function playSongById(id) {
+    const idx = getIndexById(id);
+    if (idx === -1) return;
+    currentIndex = idx;
+    loadCurrentSong();
+    playAudio();
+  }
+
+  // Load current song data into player
+  function loadCurrentSong() {
+    if (currentIndex < 0 || currentIndex >= songs.length) return;
+    const song = songs[currentIndex];
+    audio.src = song.mp3;
+    audio.load();
+    currentSongInfo.textContent = `${song.title} - ${song.artist}`;
+    updateDownloadButton();
+    updateLyricsButton();
+    updateProgress(0, 0);
+    playerSticky.style.display = 'flex';
+    btnPlayPause.innerHTML = '&#9658;'; // Play icon (will update on play)
+    isPlaying = false;
+  }
+
+  // Play audio
+  function playAudio() {
+    audio.play().then(() => {
+      isPlaying = true;
+      btnPlayPause.innerHTML = '&#10074;&#10074;'; // Pause icon
+      updateAriaPlayPause(true);
+    }).catch(err => {
+      alert('Playback failed. This might be due to browser restrictions.');
+    });
+  }
+
+  // Pause audio
+  function pauseAudio() {
+    audio.pause();
+    isPlaying = false;
+    btnPlayPause.innerHTML = '&#9658;'; // Play icon
+    updateAriaPlayPause(false);
+  }
+
+  // Toggle play/pause
+  function togglePlayPause() {
+    if (isPlaying) pauseAudio();
+    else playAudio();
+  }
+
+  // Play next song
+  function playNext() {
+    if (songs.length === 0) return;
+    if (repeat) {
+      // replay current
+      audio.currentTime = 0;
+      playAudio();
+      return;
+    }
+    currentIndex = (currentIndex + 1) % songs.length;
+    loadCurrentSong();
+    playAudio();
+  }
+
+  // Play previous song
+  function playPrev() {
+    if (songs.length === 0) return;
+    if (repeat) {
+      // replay current
+      audio.currentTime = 0;
+      playAudio();
+      return;
+    }
+    currentIndex = (currentIndex - 1 + songs.length) % songs.length;
+    loadCurrentSong();
+    playAudio();
+  }
+
+  // Update progress bar and time
+  function updateProgress(current, duration) {
+    if (duration > 0) {
+      const percent = (current / duration) * 100;
+      progressBar.style.width = `${percent}%`;
+      progressContainer.setAttribute('aria-valuenow', Math.round(percent));
+      timeDisplay.textContent = formatTime(current) + ' / ' + formatTime(duration);
+    } else {
+      progressBar.style.width = '0%';
+      progressContainer.setAttribute('aria-valuenow', 0);
+      timeDisplay.textContent = '0:00 / 0:00';
+    }
+  }
+
+  // Format seconds to mm:ss
+  function formatTime(seconds) {
+    seconds = Math.floor(seconds);
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  // Handle user seeking on progress bar
+  function seek(e) {
+    const rect = progressContainer.getBoundingClientRect();
+    let posX = 0;
+    if (e.type.startsWith('touch')) {
+      posX = e.touches[0].clientX - rect.left;
+    } else {
+      posX = e.clientX - rect.left;
+    }
+    posX = Math.max(0, Math.min(posX, rect.width));
+    const percent = posX / rect.width;
+    if (audio.duration) {
+      audio.currentTime = percent * audio.duration;
+    }
+  }
+
+  // Update download button state
+  function updateDownloadButton() {
+    if (currentIndex < 0) {
+      btnDownload.disabled = true;
+      btnDownload.setAttribute('aria-disabled', 'true');
+      return;
+    }
+    const allowed = songs[currentIndex].downloadAllowed;
+    btnDownload.disabled = !allowed;
+    btnDownload.setAttribute('aria-disabled', String(!allowed));
+  }
+
+  // Update lyrics button (enabled if lyrics exist)
+  function updateLyricsButton() {
+    if (currentIndex < 0) {
+      btnLyrics.disabled = true;
+      btnLyrics.setAttribute('aria-disabled', 'true');
+      return;
+    }
+    btnLyrics.disabled = false;
+    btnLyrics.setAttribute('aria-disabled', 'false');
+  }
+
+  // Show lyrics modal
+  function showLyrics() {
+    if (currentIndex < 0) return;
+    lyricsContent.textContent = songs[currentIndex].lyrics || 'No lyrics available.';
+    lyricsModal.style.display = 'block';
+    lyricsModal.focus();
+    // Trap focus inside modal for accessibility
+    document.addEventListener('keydown', trapFocusInModal);
+  }
+
+  // Close lyrics modal
+  function closeLyrics() {
+    lyricsModal.style.display = 'none';
+    // Return focus to lyrics button
+    btnLyrics.focus();
+    document.removeEventListener('keydown', trapFocusInModal);
+  }
+
+  // Trap focus in modal for accessibility
+  function trapFocusInModal(e) {
+    if (e.key === 'Tab') {
+      const focusable = [...lyricsModal.querySelectorAll('button, [tabindex]:not([tabindex="-1"])')].filter(el => !el.disabled);
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
+    if (e.key === 'Escape') {
+      closeLyrics();
+    }
+  }
+
+  // Handle repeat toggle button
+  function toggleRepeat() {
+    repeat = !repeat;
+    btnRepeat.classList.toggle('active', repeat);
+    btnRepeat.setAttribute('aria-pressed', repeat);
+  }
+
+  // Play/pause aria label update helper
+  function updateAriaPlayPause(playing) {
+    btnPlayPause.setAttribute('aria-label', playing ? 'Pause' : 'Play');
+  }
+
+  // Volume control
+  function updateVolume(value) {
+    audio.volume = value;
+  }
+
+  // Initialize theme from localStorage
+  function initTheme() {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      document.body.classList.add('dark');
+      themeToggleBtn.textContent = '☀️';
+    } else {
+      document.body.classList.remove('dark');
+      themeToggleBtn.textContent = '🌙';
+    }
+  }
+
+  // Toggle theme
+  function toggleTheme() {
+    const isDark = document.body.classList.toggle('dark');
+    themeToggleBtn.textContent = isDark ? '☀️' : '🌙';
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  }
+
+  // Search songs by query in title or artist (case-insensitive)
+  function searchSongs(query) {
+    query = query.trim().toLowerCase();
+    if (!query) return [];
+    return songs.filter(s =>
+      s.title.toLowerCase().includes(query) || s.artist.toLowerCase().includes(query));
+  }
+
+  // Show top 50 or search results depending on input
+  function updateSongLists() {
+    const query = searchInput.value.trim();
+    if (query === '') {
+      searchResults.style.display = 'none';
+      renderSongs(songs, top50List);
+      top50List.style.display = 'grid';
+    } else {
+      filteredSongs = searchSongs(query);
+      renderSongs(filteredSongs, searchResults);
+      top50List.style.display = 'none';
+      searchResults.style.display = 'grid';
+    }
+  }
+
+  // Initialization
+  function init() {
+    loadFavorites();
+    renderSongs(songs, top50List);
+    searchResults.style.display = 'none';
+    playerSticky.style.display = 'none';
+    initTheme();
+    volumeControl.value = 0.8;
+    audio.volume = 0.8;
+
+    // Events
+    themeToggleBtn.addEventListener('click', toggleTheme);
+
+    btnPlayPause.addEventListener('click', togglePlayPause);
+    btnNext.addEventListener('click', playNext);
+    btnPrev.addEventListener('click', playPrev);
+    btnRepeat.addEventListener('click', toggleRepeat);
+    btnDownload.addEventListener('click', () => {
+      if (currentIndex < 0) return;
+      if (!songs[currentIndex].downloadAllowed) {
+        alert('Download not allowed for this song.');
+        return;
+      }
+      const a = document.createElement('a');
+      a.href = songs[currentIndex].mp3;
+      a.download = `${songs[currentIndex].title} - ${songs[currentIndex].artist}.mp3`;
+      a.click();
+    });
+    btnLyrics.addEventListener('click', showLyrics);
+    closeLyricsBtn.addEventListener('click', closeLyrics);
+    lyricsModal.addEventListener('click', e => {
+      if (e.target === lyricsModal) closeLyrics();
+    });
+
+    volumeControl.addEventListener('input', e => {
+      updateVolume(e.target.value);
+    });
+
+    // Audio events
+    audio.addEventListener('timeupdate', () => {
+      updateProgress(audio.currentTime, audio.duration);
+    });
+    audio.addEventListener('ended', playNext);
+    audio.addEventListener('loadedmetadata', () => {
+      updateProgress(audio.currentTime, audio.duration);
+    });
+
+    // Progress bar seek events
+    let isSeeking = false;
+    progressContainer.addEventListener('mousedown', e => {
+      isSeeking = true;
+      seek(e);
+    });
+    progressContainer.addEventListener('touchstart', e => {
+      isSeeking = true;
+      seek(e);
+    });
+    document.addEventListener('mouseup', () => {
+      if (isSeeking) isSeeking = false;
+    });
+    document.addEventListener('touchend', () => {
+      if (isSeeking) isSeeking = false;
+    });
+    progressContainer.addEventListener('mousemove', e => {
+      if (isSeeking) seek(e);
+    });
+    progressContainer.addEventListener('touchmove', e => {
+      if (isSeeking) seek(e);
+    });
+
+    // Search input
+    searchInput.addEventListener('input', updateSongLists);
+
+    // Initial aria label for play/pause
+    updateAriaPlayPause(false);
+  }
+
+  init();
+})();
+</script>
+
+</body>
+</html>
