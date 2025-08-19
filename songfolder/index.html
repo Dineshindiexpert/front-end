@@ -1,124 +1,538 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Form Submission</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet" />
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(to right, #74ebd5, #acb6e5);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-    form {
-      background-color: white;
-      padding: 30px 40px;
-      border-radius: 15px;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-      width: 100%;
-      max-width: 400px;
-    }
-    .studio-header {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 36px;
-      text-align: center;
-      background: linear-gradient(90deg, #00d2ff, #9282a0);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-shadow: 2px 2px 5px rgba(0,0,0,0.4);
-      letter-spacing: 1px;
-      margin-bottom: 30px;
-    }
-    label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: bold;
-      color: #555;
-    }
-    input[type="text"],
-    input[type="password"] {
-      width: 100%;
-      padding: 10px 12px;
-      margin-bottom: 20px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 16px;
-      transition: border 0.3s ease;
-    }
-    input:focus {
-      border-color: #66afe9;
-      outline: none;
-    }
-    .button-group {
-      display: flex;
-      justify-content: space-between;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-    button[type="submit"] {
-      background-color: #28a745;
-      color: white;
-    }
-    button[type="submit"]:hover {
-      background-color: #218838;
-    }
-    button[type="reset"] {
-      background-color: #dc3545;
-      color: white;
-    }
-    button[type="reset"]:hover {
-      background-color: #c82333;
-    }
-    @media (max-width: 480px) {
-      form {
-        padding: 20px;
-      }
-      .button-group {
-        flex-direction: column;
-        gap: 10px;
-      }
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Apne Song – Modern Player</title>
+<style>
+  :root{
+    --bg:#121217;
+    --card:#1f1f30;
+    --ink:#eee;
+    --muted:#bbb;
+    --accent:#ff4081;
+    --accent-2:#ff80ab;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Segoe UI",Tahoma,Geneva,Verdana,sans-serif;
+  }
+
+  /* Top bar (search + filter + favorites toggle) */
+  .toolbar{
+    position:sticky;top:0;z-index:50;
+    background:linear-gradient(180deg, #151528 0%, #121217 100%);
+    padding:12px 16px; box-shadow:0 4px 20px #0008;
+    display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:center;
+  }
+  .brand{font-weight:800; letter-spacing:.5px; color:var(--accent-2)}
+  .search{
+    display:flex; gap:8px; align-items:center;
+    background:var(--card); border:1px solid #2b2b49; border-radius:999px;
+    padding:6px 10px; width:min(720px,95vw);
+    box-shadow:0 0 10px #ff408122;
+  }
+  .search input{
+    flex:1; background:transparent; border:0; outline:none; color:var(--ink); font-size:15px;
+  }
+  .chip, .btn{
+    background:linear-gradient(90deg,var(--accent),var(--accent-2));
+    color:#fff; border:0; padding:9px 14px; border-radius:999px; cursor:pointer; font-weight:700;
+    box-shadow:0 0 12px #ff408166; transition:transform .15s ease, box-shadow .2s ease, filter .2s ease;
+  }
+  .chip:hover, .btn:hover{transform:translateY(-1px); box-shadow:0 0 16px #ff80abcc}
+  .chip.alt{background:#24243d;color:#fff;border:1px solid #34345a;box-shadow:none;font-weight:600}
+  .chip.toggle.active{outline:2px solid var(--accent-2)}
+  .suggest{
+    position:absolute; top:100%; left:0; right:0; background:#18182b; border:1px solid #2b2b49;
+    border-radius:12px; overflow:hidden; margin-top:6px; display:none; max-height:45vh; overflow-y:auto;
+    box-shadow:0 16px 40px #000c;
+  }
+  .suggest button{
+    display:block; width:100%; text-align:left; padding:10px 14px; background:transparent; border:0; color:var(--ink);
+    border-bottom:1px solid #23233c; cursor:pointer;
+  }
+  .suggest button:hover{background:#23233f}
+
+  /* Songs grid */
+  .wrap{padding:18px 16px 120px; max-width:1200px; margin:0 auto}
+  .grid{
+    display:grid; gap:16px; grid-template-columns:repeat(auto-fill, minmax(170px,1fr));
+  }
+  .card{
+    background:var(--card); border-radius:16px; overflow:hidden; box-shadow:0 0 12px #0008;
+    transition:transform .2s ease, box-shadow .2s ease; position:relative;
+  }
+  .card:hover{transform:translateY(-4px); box-shadow:0 10px 24px #000b}
+  .thumb{
+    width:100%; height:170px; object-fit:cover; display:block; background:#2a2a40;
+  }
+  .badge-like{
+    position:absolute; top:8px; right:8px; background:#000a; backdrop-filter:blur(6px);
+    border:1px solid #ffffff22; border-radius:999px; padding:6px 9px; cursor:pointer; user-select:none;
+  }
+  .badge-like.active{color:var(--accent-2); text-shadow:0 0 8px #ff80ab99}
+  .meta{padding:10px 12px 12px}
+  .title{font-weight:700; font-size:15px; line-height:1.2; margin:0 0 6px}
+  .artist{color:var(--muted); font-size:13px; margin:0 0 10px}
+  .row{display:flex; gap:8px}
+  .mini{flex:1; padding:8px 10px; border-radius:10px; border:1px solid #2b2b49; background:#1a1a2e; color:#fff; cursor:pointer}
+  .mini.play{background:linear-gradient(90deg,var(--accent),var(--accent-2)); border:0; box-shadow:0 0 12px #ff408144}
+  .mini:hover{filter:brightness(1.05)}
+
+  /* Now Playing bar */
+  .player{
+    position:fixed; left:12px; right:12px; bottom:12px; z-index:60;
+    background:linear-gradient(90deg,#1b1b30 0%, #20203a 100%);
+    border:1px solid #313155; border-radius:18px; padding:10px;
+    box-shadow:0 -8px 40px #000c, 0 0 24px #ff408122;
+    display:grid; grid-template-columns:auto 1fr auto; gap:12px; align-items:center;
+  }
+  .np{display:flex; align-items:center; gap:10px; min-width:0}
+  .np img{width:52px; height:52px; border-radius:10px; object-fit:cover; background:#2a2a40}
+  .np .t{font-weight:800; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .np .s{color:var(--muted); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+
+  .controls{display:flex; align-items:center; gap:8px}
+  .icon{
+    background:#24243d; border:1px solid #34345a; color:#fff; width:38px; height:38px; border-radius:10px;
+    display:grid; place-items:center; cursor:pointer; transition:transform .15s, filter .2s, background .2s;
+  }
+  .icon:hover{filter:brightness(1.1)}
+  .icon.primary{background:linear-gradient(90deg,var(--accent),var(--accent-2)); border:0; box-shadow:0 0 14px #ff408166}
+  .icon.toggled{outline:2px solid var(--accent-2)}
+  .time{font-size:12px; color:var(--muted); min-width:90px; text-align:center}
+
+  .progress{
+    grid-column:1/-1; height:8px; background:#2a2a40; border-radius:999px; cursor:pointer; position:relative; overflow:hidden;
+  }
+  .bar{position:absolute; left:0; top:0; bottom:0; width:0%; background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+  .dot{position:absolute; top:50%; transform:translate(-50%,-50%); width:14px; height:14px; background:#fff; border-radius:50%; display:none}
+  .progress:hover .dot{display:block}
+
+  .vol{display:flex; align-items:center; gap:6px; width:120px}
+  .vol input{width:100%}
+
+  .queueBtn{margin-left:6px}
+  .favBtn{margin-left:2px}
+
+  /* Queue Drawer */
+  .drawer{
+    position:fixed; right:12px; bottom:84px; width:min(360px, 92vw); max-height:60vh; overflow:auto;
+    background:#17172b; border:1px solid #2b2b49; border-radius:14px; box-shadow:0 12px 40px #000c;
+    display:none;
+  }
+  .drawer header{padding:12px 14px; font-weight:800; color:var(--accent-2); border-bottom:1px solid #2b2b49}
+  .qitem{
+    display:flex; gap:10px; align-items:center; padding:10px 14px; cursor:pointer; border-bottom:1px solid #20203a;
+  }
+  .qitem:hover{background:#20203a}
+  .qitem img{width:42px; height:42px; border-radius:8px; object-fit:cover; background:#2a2a40}
+  .qmeta{min-width:0}
+  .qtitle{font-weight:700; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .qartist{font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .playingDot{width:10px; height:10px; border-radius:50%; background:var(--accent-2); box-shadow:0 0 10px #ff80ab}
+
+  @media (max-width:560px){
+    .np img{display:none}
+    .vol{display:none}
+    .time{display:none}
+  }
+</style>
 </head>
 <body>
-  <form onsubmit="return validateForm(event)">
-    <h1 class="studio-header">🎧..Calmly..🎶</h1>
-    <label for="fullname">Enter your full name:</label>
-    <input type="text" name="fullname" id="fullname" required />
-    <label for="password">Enter your password:</label>
-    <input type="password" name="password" id="password" required />
-    <div class="button-group">
-      <button type="submit">Submit</button>
-      <button type="reset">Reset</button>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <div class="brand">🎵 Apne Song</div>
+    <div style="position:relative; width:min(720px,95vw);">
+      <div class="search">
+        <span>🔎</span>
+        <input id="searchInput" type="search" placeholder="Search songs or artists…" autocomplete="off" />
+        <button id="clearBtn" class="chip alt">Clear</button>
+        <button id="favToggle" class="chip toggle">❤️ Favorites</button>
+      </div>
+      <div id="suggestBox" class="suggest"></div>
     </div>
-  </form>
+  </div>
 
-  <script>
-    function validateForm(event) {
-      const fullName = document.getElementById('fullname').value.trim();
-      const password = document.getElementById('password').value.trim();
-      if (!fullName || !password) {
-        alert('All fields are required!');
-        event.preventDefault();
-        return false;
-      }
-      event.preventDefault();
-      window.location.href = '/2secondpage.html';
+  <!-- GRID -->
+  <div class="wrap">
+    <div id="grid" class="grid"></div>
+  </div>
 
-      return false;
-    }
-  </script>
+  <!-- NOW PLAYING BAR -->
+  <div id="player" class="player" style="display:none;">
+    <div class="np">
+      <img id="npImg" alt="cover" referrerpolicy="no-referrer" />
+      <div style="min-width:0;">
+        <div id="npTitle" class="t">—</div>
+        <div id="npArtist" class="s">—</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="btnPrev" class="icon" title="Previous">⏮</button>
+      <button id="btnPlay" class="icon primary" title="Play/Pause">▶</button>
+      <button id="btnNext" class="icon" title="Next">⏭</button>
+      <button id="btnShuffle" class="icon queueBtn" title="Shuffle">🔀</button>
+      <button id="btnRepeat" class="icon" title="Repeat">🔁</button>
+      <button id="btnLike" class="icon favBtn" title="Like">❤️</button>
+      <button id="btnDownload" class="icon" title="Download">⬇</button>
+      <button id="btnShare" class="icon" title="Share">📤</button>
+      <div class="vol">
+        <span>🔊</span>
+        <input id="vol" type="range" min="0" max="1" step="0.01" />
+      </div>
+      <button id="btnQueue" class="icon queueBtn" title="Queue">🧾</button>
+      <div id="time" class="time">0:00 / 0:00</div>
+    </div>
+
+    <div id="progress" class="progress" title="Seek">
+      <div id="bar" class="bar"></div>
+      <div id="dot" class="dot"></div>
+    </div>
+  </div>
+
+  <!-- QUEUE DRAWER -->
+  <div id="drawer" class="drawer" aria-label="Up Next">
+    <header>Up Next</header>
+    <div id="qList"></div>
+  </div>
+
+  <!-- AUDIO -->
+  <audio id="audio"></audio>
+
+<script>
+/* =========================
+   JSON DATA (UNCHANGED)
+   ========================= */
+const songs = [
+  {
+    title: "Tujhe Kitna Chahne Lage",
+    artist: "Arijit Singh",
+    mp3Url: "https://example.com/audio/tujhe_kitna_chahne_lage.mp3",
+    img: "https://img.youtube.com/vi/cBAj7c_4mtw/hqdefault.jpg"
+  },
+  {
+    title: "Sahiba",
+    artist: "Arijit Singh",
+    mp3Url: "Sahiba-1-mobcupe.com.mp3",
+    img: "https://th.bing.com/th/id/OIP.oQKZvTYFxf6jNUWEMYl56QHaHa?w=177&h=180&c=7&r=0&o=7&pid=1.7&rm=3"
+  },
+  {
+    title: "Bekhayali",
+    artist: "Sachet Tandon",
+    mp3Url: "https://example.com/audio/bekhayali.mp3",
+    img: "https://img.youtube.com/vi/S2nG2UBZq88/hqdefault.jpg"
+  },
+  {
+    title: "Beretta",
+    artist: "amanraj gill",
+    mp3Url: "beretta1.mp3",
+    img: "https://th.bing.com/th/id/OIP.UJMtb6EFnAsMPI1XcyzppAHaEK?w=321&h=180&c=7&r=0&o=7&pid=1.7&rm=3"
+  }
+];
+
+/* ====== State ====== */
+let current = -1;
+let shuffle = JSON.parse(localStorage.getItem("shuffle") || "false");
+let repeat = localStorage.getItem("repeatMode") || "off"; // off | one | all
+let liked = new Set(JSON.parse(localStorage.getItem("likedSongs") || "[]")); // keys: title|artist
+let favoritesOnly = false;
+
+const audio = document.getElementById('audio');
+audio.preload = 'metadata';
+
+/* ====== DOM ====== */
+const grid = document.getElementById('grid');
+const suggestBox = document.getElementById('suggestBox');
+const searchInput = document.getElementById('searchInput');
+const clearBtn = document.getElementById('clearBtn');
+const favToggle = document.getElementById('favToggle');
+
+const player = document.getElementById('player');
+const npImg = document.getElementById('npImg');
+const npTitle = document.getElementById('npTitle');
+const npArtist = document.getElementById('npArtist');
+const btnPrev = document.getElementById('btnPrev');
+const btnPlay = document.getElementById('btnPlay');
+const btnNext = document.getElementById('btnNext');
+const btnShuffle = document.getElementById('btnShuffle');
+const btnRepeat = document.getElementById('btnRepeat');
+const btnLike = document.getElementById('btnLike');
+const btnDownload = document.getElementById('btnDownload');
+const btnShare = document.getElementById('btnShare');
+const vol = document.getElementById('vol');
+const timeBox = document.getElementById('time');
+const progress = document.getElementById('progress');
+const bar = document.getElementById('bar');
+const dot = document.getElementById('dot');
+
+const drawer = document.getElementById('drawer');
+const btnQueue = document.getElementById('btnQueue');
+const qList = document.getElementById('qList');
+
+/* ====== Helpers ====== */
+const key = s => `${s.title}|${s.artist}`;
+function fmt(t){
+  if(!t || isNaN(t)) return "0:00";
+  t = Math.floor(t); const m = Math.floor(t/60); const s = (t%60).toString().padStart(2,"0");
+  return `${m}:${s}`;
+}
+function setLikeUI(btn, isLiked){
+  btn.classList.toggle('toggled', isLiked);
+  btn.textContent = isLiked ? '💖' : '❤️';
+}
+function imageWithFallback(src, alt, size=170){
+  const img = new Image();
+  img.loading = "lazy";
+  img.referrerPolicy = "no-referrer";
+  img.alt = alt || "cover";
+  img.className = "thumb";
+  img.width = size; img.height = size;
+  img.src = src;
+  img.onerror = () => {
+    img.src = `data:image/svg+xml;charset=UTF-8,` +
+      encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size}'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop stop-color='%23ff4081'/><stop offset='1' stop-color='%23ff80ab'/></linearGradient></defs><rect width='100%' height='100%' fill='%231f1f30'/><rect x='8' y='8' width='${size-16}' height='${size-16}' rx='12' fill='url(%23g)' opacity='0.25'/><text x='50%' y='52%' dominant-baseline='middle' text-anchor='middle' fill='%23ffffffbb' font-family='Segoe UI' font-size='14'>No Image</text></svg>`);
+  };
+  return img;
+}
+function currentSong(){ return songs[current]; }
+
+/* ====== Render Cards ====== */
+function render(list){
+  grid.innerHTML = '';
+  list.forEach((s, idx) => {
+    const card = document.createElement('div'); card.className = 'card';
+
+    const likePill = document.createElement('button');
+    likePill.className = 'badge-like' + (liked.has(key(s)) ? ' active' : '');
+    likePill.textContent = liked.has(key(s)) ? '💖' : '♡';
+    likePill.onclick = (e)=>{ e.stopPropagation(); toggleLike(s, likePill); };
+
+    const img = imageWithFallback(s.img, s.title);
+
+    const meta = document.createElement('div'); meta.className = 'meta';
+    const t = document.createElement('div'); t.className = 'title'; t.textContent = s.title;
+    const a = document.createElement('div'); a.className = 'artist'; a.textContent = s.artist;
+
+    const row = document.createElement('div'); row.className = 'row';
+    const play = document.createElement('button'); play.className = 'mini play'; play.textContent = '▶ Play';
+    play.onclick = (e)=>{ e.stopPropagation(); playByIndex(idx); };
+
+    const dl = document.createElement('button'); dl.className = 'mini'; dl.textContent = '⬇ Download';
+    dl.onclick = (e)=>{ e.stopPropagation(); downloadSong(s); };
+
+    meta.append(t,a,row);
+    row.append(play, dl);
+    card.append(likePill, img, meta);
+    card.onclick = ()=> playByIndex(idx);
+
+    grid.appendChild(card);
+  });
+}
+
+/* ====== Queue Drawer ====== */
+function renderQueue(){
+  qList.innerHTML = '';
+  songs.forEach((s,i)=>{
+    const item = document.createElement('div'); item.className='qitem';
+    const dotEl = document.createElement('div'); dotEl.className='playingDot'; dotEl.style.visibility = (i===current ? 'visible':'hidden');
+    const img = imageWithFallback(s.img, s.title, 42); img.className='';
+    const meta = document.createElement('div'); meta.className='qmeta';
+    const tt = document.createElement('div'); tt.className='qtitle'; tt.textContent = s.title;
+    const ar = document.createElement('div'); ar.className='qartist'; ar.textContent = s.artist;
+    meta.append(tt,ar);
+    item.append(dotEl,img,meta);
+    item.onclick = ()=> playByIndex(i);
+    qList.appendChild(item);
+  });
+}
+function toggleDrawer(){ drawer.style.display = drawer.style.display==='block' ? 'none' : 'block'; }
+
+/* ====== Search & Suggestions ====== */
+function applyFilters(){
+  const q = searchInput.value.trim().toLowerCase();
+  let data = songs.filter(s=>{
+    const okFav = favoritesOnly ? liked.has(key(s)) : true;
+    const okText = !q || s.title.toLowerCase().includes(q) || s.artist.toLowerCase().includes(q);
+    return okFav && okText;
+  });
+  render(data);
+}
+searchInput.addEventListener('input', ()=>{
+  const q = searchInput.value.trim().toLowerCase();
+  applyFilters();
+  // suggestions
+  if(!q){suggestBox.style.display='none'; return;}
+  const sugs = songs.filter(s=> s.title.toLowerCase().startsWith(q) || s.artist.toLowerCase().startsWith(q)).slice(0,6);
+  if(!sugs.length){suggestBox.style.display='none'; return;}
+  suggestBox.innerHTML = '';
+  sugs.forEach(s=>{
+    const b = document.createElement('button');
+    b.textContent = `${s.title} — ${s.artist}`;
+    b.onclick = ()=>{ searchInput.value = s.title; suggestBox.style.display='none'; applyFilters(); };
+    suggestBox.appendChild(b);
+  });
+  suggestBox.style.display='block';
+});
+document.body.addEventListener('click', (e)=>{
+  if(!suggestBox.contains(e.target) && e.target!==searchInput){ suggestBox.style.display='none'; }
+});
+clearBtn.addEventListener('click', ()=>{ searchInput.value=''; applyFilters(); });
+favToggle.addEventListener('click', ()=>{
+  favoritesOnly = !favoritesOnly;
+  favToggle.classList.toggle('active', favoritesOnly);
+  applyFilters();
+});
+
+/* ====== Likes ====== */
+function toggleLike(s, pillBtn){
+  const k = key(s);
+  if(liked.has(k)) liked.delete(k); else liked.add(k);
+  localStorage.setItem('likedSongs', JSON.stringify([...liked]));
+  if(pillBtn){
+    pillBtn.classList.toggle('active', liked.has(k));
+    pillBtn.textContent = liked.has(k) ? '💖' : '♡';
+  }
+  if(currentSong() && key(currentSong())===k){
+    setLikeUI(btnLike, liked.has(k));
+  }
+}
+
+/* ====== Play Logic ====== */
+function ensurePlayerVisible(){ if(player.style.display!=='grid' && player.style.display!=='block'){ player.style.display='grid'; } }
+function playByIndex(i){
+  if(i<0 || i>=songs.length) return;
+  current = i;
+  const s = songs[i];
+  ensurePlayerVisible();
+  audio.src = s.mp3Url;
+  audio.play().catch(()=>{}); // allow autoplay fail silently (user will press play)
+  btnPlay.textContent = '⏸';
+  npTitle.textContent = s.title; npArtist.textContent = s.artist;
+  npImg.src = s.img; npImg.onerror = ()=>{ npImg.src = imageWithFallback('', s.title, 52).src; };
+  setLikeUI(btnLike, liked.has(key(s)));
+  updateQueueDots();
+}
+function updateQueueDots(){
+  [...qList.children].forEach((el,idx)=>{
+    const dot = el.querySelector('.playingDot');
+    if(dot) dot.style.visibility = (idx===current ? 'visible' : 'hidden');
+  });
+}
+btnPlay.addEventListener('click', ()=>{
+  if(!audio.src){ if(songs.length) playByIndex(0); return; }
+  if(audio.paused){ audio.play(); btnPlay.textContent='⏸'; } else { audio.pause(); btnPlay.textContent='▶'; }
+});
+btnPrev.addEventListener('click', ()=>{
+  if(current===-1){ playByIndex(0); return; }
+  let i = current-1; if(i<0) i = songs.length-1;
+  playByIndex(i);
+});
+btnNext.addEventListener('click', nextTrack);
+
+function nextTrack(){
+  if(shuffle){
+    let i = Math.floor(Math.random()*songs.length);
+    if(songs.length>1){ while(i===current){ i = Math.floor(Math.random()*songs.length); } }
+    playByIndex(i); return;
+  }
+  if(repeat==='one'){ audio.currentTime=0; audio.play(); return; }
+  let i = current+1; if(i>=songs.length){ i = (repeat==='all') ? 0 : current; }
+  if(i!==current) playByIndex(i); else audio.pause();
+}
+
+/* Repeat: off -> all -> one */
+function cycleRepeat(){
+  repeat = repeat==='off' ? 'all' : repeat==='all' ? 'one' : 'off';
+  localStorage.setItem('repeatMode', repeat);
+  btnRepeat.classList.toggle('toggled', repeat!=='off');
+  btnRepeat.textContent = repeat==='one' ? '🔂' : '🔁';
+}
+btnRepeat.addEventListener('click', cycleRepeat);
+
+/* Shuffle toggle */
+btnShuffle.addEventListener('click', ()=>{
+  shuffle = !shuffle; localStorage.setItem('shuffle', JSON.stringify(shuffle));
+  btnShuffle.classList.toggle('toggled', shuffle);
+});
+
+/* Like/Download/Share */
+btnLike.addEventListener('click', ()=>{
+  const s = currentSong(); if(!s) return;
+  const fake = document.createElement('button');
+  toggleLike(s, fake);
+  setLikeUI(btnLike, liked.has(key(s)));
+});
+function downloadSong(s){
+  const a = document.createElement('a'); a.href = s.mp3Url; a.download = `${s.title}.mp3`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+btnDownload.addEventListener('click', ()=>{ const s=currentSong(); if(s) downloadSong(s); });
+btnShare.addEventListener('click', ()=>{
+  const s=currentSong(); if(!s) return;
+  const text = `Listen to ${s.title} — ${s.artist}`;
+  if(navigator.share){ navigator.share({title:s.title, text, url:s.mp3Url}).catch(()=>{}); }
+  else { prompt("Copy link:", s.mp3Url); }
+});
+
+/* Volume */
+const savedVol = parseFloat(localStorage.getItem('volume') || '0.8');
+audio.volume = isNaN(savedVol) ? 0.8 : savedVol;
+vol.value = audio.volume.toString();
+vol.addEventListener('input', (e)=>{ audio.volume = parseFloat(e.target.value||'0.8'); localStorage.setItem('volume', audio.volume); });
+
+/* Progress / Seek */
+function updateTime(){
+  const d = audio.duration || 0;
+  const c = audio.currentTime || 0;
+  timeBox.textContent = `${fmt(c)} / ${fmt(d)}`;
+  const pct = d ? (c/d)*100 : 0;
+  bar.style.width = pct + '%';
+  dot.style.left = pct + '%';
+}
+audio.addEventListener('timeupdate', updateTime);
+audio.addEventListener('loadedmetadata', updateTime);
+audio.addEventListener('ended', nextTrack);
+
+let seeking=false;
+function seekAt(clientX){
+  const rect = progress.getBoundingClientRect();
+  const x = Math.max(0, Math.min(clientX-rect.left, rect.width));
+  const pct = x/rect.width;
+  if(audio.duration){ audio.currentTime = pct*audio.duration; }
+}
+progress.addEventListener('mousedown', (e)=>{ seeking=true; seekAt(e.clientX); });
+window.addEventListener('mousemove', (e)=>{ if(seeking) seekAt(e.clientX); });
+window.addEventListener('mouseup', ()=>{ seeking=false; });
+progress.addEventListener('touchstart', (e)=>{ seekAt(e.touches[0].clientX); });
+progress.addEventListener('touchmove', (e)=>{ seekAt(e.touches[0].clientX); });
+
+/* Keyboard shortcuts */
+window.addEventListener('keydown', (e)=>{
+  if(e.target.matches('input, textarea')) return;
+  if(e.code==='Space'){ e.preventDefault(); btnPlay.click(); }
+  if(e.code==='ArrowRight'){ audio.currentTime = Math.min((audio.currentTime||0)+5, audio.duration||0); }
+  if(e.code==='ArrowLeft'){ audio.currentTime = Math.max((audio.currentTime||0)-5, 0); }
+  if(e.code==='KeyL'){ cycleRepeat(); }
+  if(e.code==='KeyS'){ btnShuffle.click(); }
+});
+
+/* Init UI state */
+btnShuffle.classList.toggle('toggled', shuffle);
+btnRepeat.classList.toggle('toggled', repeat!=='off');
+btnRepeat.textContent = repeat==='one' ? '🔂' : '🔁';
+
+/* First render */
+render(songs);
+renderQueue();
+
+/* Queue toggle */
+btnQueue.addEventListener('click', ()=>{ toggleDrawer(); renderQueue(); });
+
+</script>
 </body>
 </html>
