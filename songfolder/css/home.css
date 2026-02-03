@@ -1,0 +1,15 @@
+
+    :root { --bg: #0f0f13; --card: #1a1a26; --accent: #ff4081; --ink: #eee; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: sans-serif; padding-bottom: 100px; }
+    .header { padding: 20px; text-align: center; background: #161625; position: sticky; top: 0; z-index: 10; }
+    .search-box { display: flex; max-width: 500px; margin: 10px auto; background: var(--card); border-radius: 25px; padding: 5px 15px; border: 1px solid #333; }
+    .search-box input { flex: 1; background: transparent; border: none; color: white; padding: 10px; outline: none; }
+    .search-box button { background: none; border: none; cursor: pointer; font-size: 20px; }
+    .container { max-width: 1200px; margin: 20px auto; padding: 0 15px; }
+    .grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+    .card { background: var(--card); border-radius: 12px; overflow: hidden; cursor: pointer; transition: 0.3s; border: 1px solid transparent; }
+    .card:hover { transform: translateY(-5px); border-color: var(--accent); }
+    .card img { width: 100%; aspect-ratio: 16/9; object-fit: cover; }
+    .card-info { padding: 10px; }
+    .card-title { font-size: 14px; font-weight: bold; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .player-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #1c1c2e; padding: 15px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #333; display: none; }

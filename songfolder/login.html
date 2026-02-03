@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Apne Song – Login/Signup</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="./css/login.css">
+</head>
+<body>
+
+<div class="auth-box">
+  <div class="logo">🎵 APNE SONG</div>
+  
+
+  <div class="tabs">
+    <button class="active" onclick="showLogin()">Login</button>
+    <button onclick="showSignup()">Signup</button>
+  </div>
+
+  <!-- LOGIN FORM -->
+  <div class="form active" id="loginForm">
+    <input type="email" id="loginEmail" placeholder="Email">
+    <div class="pass-group">
+      <input type="password" id="loginPassword" placeholder="Password" >
+      <span class="toggle-pass" onclick="togglePassword('loginPassword')"><i class="bi bi-eye"></i></span>
+    </div>
+    <button onclick="loginUser()">Login</button>
+    <div id="loginError" class="error-msg"></div>
+  </div>
+
+  <!-- SIGNUP FORM -->
+  <div class="form" id="signupForm">
+    <input type="text" id="signupFirst" placeholder="First Name">
+    <input type="text" id="signupLast" placeholder="Last Name">
+    <input type="email" id="signupEmail" placeholder="Email">
+    <div class="pass-group">
+      <input type="password" id="signupPassword" placeholder="Password">
+      <span class="toggle-pass" onclick="togglePassword('signupPassword')"><i class="bi bi-eye"></i></span>
+    </div>
+    <div class="pass-group">
+      <input type="password" id="signupConfirm" placeholder="Confirm Password">
+      <span class="toggle-pass" onclick="togglePassword('signupConfirm')"><i class="bi bi-eye"></span>
+    </div>
+    <button onclick="signupUser()">Create Account</button>
+    <div id="signupError" class="error-msg"></div>
+  </div>
+
+</div>
+
+<script type="module" src="./js/auth.js"></script>
+</body>
+</html>
